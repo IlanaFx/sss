@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Currency Quest — Әлем валюталары</title>
+<style>
+:root{
+ --bg:#111827;--panel:#1f2937;--panel2:#263244;--gold:#fbbf24;--blue:#38bdf8;
+ --green:#34d399;--red:#fb7185;--text:#f8fafc;--muted:#94a3b8;
+}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#243b66,#0f172a 58%);color:var(--text);font-family:Arial,Helvetica,sans-serif;min-height:100vh}
+header{max-width:1200px;margin:auto;padding:22px 20px;display:flex;justify-content:space-between;align-items:center;gap:15px}
+.logo{font-size:25px;font-weight:900}.logo span{color:var(--gold)}
+.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.1);padding:10px 15px;border-radius:15px;font-weight:bold}
+.game{max-width:1200px;margin:auto;padding:0 20px 40px}
+.hero{background:linear-gradient(135deg,#1d4ed8,#7c3aed);border-radius:26px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.3);margin-bottom:20px}
+.hero h1{margin:0 0 8px;font-size:clamp(30px,5vw,54px)}.hero p{color:#e0e7ff;font-size:18px;max-width:700px}
+.progress-wrap{margin-top:22px}.progress{height:12px;background:rgba(255,255,255,.2);border-radius:20px;overflow:hidden}.progress div{height:100%;background:var(--gold);width:0;transition:.5s}
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:15px}
+.level{background:rgba(31,41,55,.9);border:1px solid #334155;border-radius:20px;padding:20px;cursor:pointer;transition:.2s;position:relative}
+.level:hover{transform:translateY(-4px);border-color:var(--blue)}.level.done:after{content:"✓";position:absolute;right:16px;top:14px;background:var(--green);color:#06281e;width:28px;height:28px;text-align:center;line-height:28px;border-radius:50%;font-weight:900}
+.level .icon{font-size:36px}.level h3{margin:12px 0 7px}.level p{margin:0;color:var(--muted);font-size:14px}
+#arena{display:none;margin-top:20px}.card{background:rgba(31,41,55,.96);border:1px solid #334155;border-radius:24px;padding:26px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.topline{display:flex;justify-content:space-between;gap:12px;align-items:center}.back{border:0;background:#334155;color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer}
+.question{font-size:22px;font-weight:800;margin:20px 0}.small{color:var(--muted);line-height:1.6}
+button.main{border:0;background:linear-gradient(135deg,var(--blue),#2563eb);color:#07111f;padding:13px 20px;border-radius:12px;font-weight:900;cursor:pointer;margin-top:18px}
+.options{display:grid;gap:10px}.option{background:#263244;border:2px solid transparent;padding:15px;border-radius:14px;cursor:pointer}.option:hover{border-color:#64748b}.option.selected{border-color:var(--blue);background:#123052}
+input,textarea{width:100%;padding:14px;background:#111827;border:1px solid #475569;color:#fff;border-radius:12px;font-size:16px;margin-top:8px}textarea{min-height:120px}
+.drop-board{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px}
+.bank,.targets{background:#111827;border-radius:18px;padding:16px;min-height:220px}.bank h4,.targets h4{margin-top:0;color:var(--gold)}
+.draggable{background:#334155;border:2px solid #475569;padding:12px;margin:8px;border-radius:10px;cursor:grab;display:inline-block}.draggable.dragging{opacity:.4}
+.target{border:2px dashed #475569;padding:14px;border-radius:12px;margin:9px 0;min-height:62px;background:#182230}.target.over{border-color:var(--gold);background:#2c2615}.target b{display:block;margin-bottom:6px}
+.target .draggable{margin:4px 0}
+.match-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#182230;padding:12px;border-radius:12px;margin:9px 0}.dropzone{border:2px dashed #475569;border-radius:9px;padding:10px;min-height:48px}
+details{margin-top:12px;background:#111827;border:1px solid #334155;border-radius:10px;padding:10px;color:#e2e8f0}summary{cursor:pointer;color:#fbbf24;font-weight:700}details p{line-height:1.6}.resultbox{margin-top:18px;padding:15px;border-radius:12px;font-weight:800;display:none}.good{display:block;background:#073b2a;color:#86efac}.bad{display:block;background:#481f2b;color:#fda4af}
+.reading{background:#111827;border-radius:15px;padding:18px;line-height:1.8;max-height:500px;overflow:auto}
+.modal-note{background:#182230;border-left:4px solid var(--gold);padding:14px;border-radius:10px;margin:15px 0}
+@media(max-width:700px){header{align-items:flex-start;flex-direction:column}.drop-board{grid-template-columns:1fr}.match-row{grid-template-columns:1fr}.card{padding:18px}}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">💱 <span>Currency Quest</span> — Әлем валюталары</div>
+ <div class="stats"><div class="stat">⭐ Ұпай: <span id="score">0</span></div><div class="stat">🏁 Деңгей: <span id="levelCount">0</span>/8</div></div>
+</header>
+
+<div class="game">
+<div id="lobby">
+ <div class="hero">
+  <h1>Әлем валюталарына саяхат 🌍</h1>
+  <p>Бұл сабақ — ойын. Әр деңгейден өтіп, валюталарды дұрыс орналастырыңыз, мәтінді оқып тапсырмаларды орындаңыз және финалдық квизден өтіңіз!</p>
+  <div class="progress-wrap"><div class="progress"><div id="progressBar"></div></div><p id="progressText">0% аяқталды</p></div>
+ </div>
+
+ <div class="levels">
+  <div class="level" data-level="1" onclick="openLevel(1)"><div class="icon">🎯</div><h3>1. Жылдам старт</h3><p>Валюта туралы бастапқы сұрақтар.</p></div>
+  <div class="level" data-level="2" onclick="openLevel(2)"><div class="icon">📖</div><h3>2. Оқу аймағы</h3><p>Мәтінді оқып, негізгі ойды табыңыз.</p></div>
+  <div class="level" data-level="3" onclick="openLevel(3)"><div class="icon">🧩</div><h3>3. Валюта пазлы</h3><p>Ел мен валютаны Drag & Drop арқылы сәйкестендіріңіз.</p></div>
+  <div class="level" data-level="4" onclick="openLevel(4)"><div class="icon">🔤</div><h3>4. Кодтар ойыны</h3><p>Валюта кодтарын дұрыс орынға жылжытыңыз.</p></div>
+  <div class="level" data-level="5" onclick="openLevel(5)"><div class="icon">🧠</div><h3>5. Супер-квиз</h3><p>Мәтін бойынша автоматты тест.</p></div>
+  <div class="level" data-level="6" onclick="openLevel(6)"><div class="icon">✍️</div><h3>6. Сөйлем құрастыр</h3><p>Ырықсыз етіс формасын қолданыңыз.</p></div>
+  <div class="level" data-level="7" onclick="openLevel(7)"><div class="icon">🎥</div><h3>7. Видео және пікір</h3><p>Бейнеролик пен дебат тапсырмасы.</p></div>
+  <div class="level" data-level="8" onclick="openLevel(8)"><div class="icon">🏆</div><h3>8. Финал</h3><p>Нәтижеңізді алыңыз.</p></div>
+ </div>
+</div>
+
+<div id="arena"></div>
+</div>
+
+<script>
+let score=0, done=new Set(), selectedOption=null;
+const arena=document.getElementById('arena');
+
+function update(){
+ document.getElementById('score').textContent=score;
+ document.getElementById('levelCount').textContent=done.size;
+ const p=Math.round(done.size/8*100);
+ document.getElementById('progressBar').style.width=p+'%';
+ document.getElementById('progressText').textContent=p+'% аяқталды';
+ document.querySelectorAll('.level').forEach(x=>x.classList.toggle('done',done.has(+x.dataset.level)));
+}
+function finishLevel(n,pts){
+ if(!done.has(n)){done.add(n);score+=pts;update();}
+ alert(`🎉 Деңгей аяқталды! +${pts} ұпай`);
+ back();
+}
+function back(){arena.style.display='none';document.getElementById('lobby').style.display='block';window.scrollTo({top:0,behavior:'smooth'});}
+function shell(title,content){document.getElementById('lobby').style.display='none';arena.style.display='block';arena.innerHTML=`<div class="card"><div class="topline"><button class="back" onclick="back()">← Картаға оралу</button><span class="small">${title}</span></div>${content}</div>`;window.scrollTo({top:0,behavior:'smooth'});}
+
+function openLevel(n){
+ if(n===1) level1(); if(n===2) level2(); if(n===3) level3(); if(n===4) level4(); if(n===5) level5(); if(n===6) level6(); if(n===7) level7(); if(n===8) level8();
+}
+
+function level1(){
+ shell("1-ДЕҢГЕЙ • Жылдам старт",`
+ <h2>🎯 Валюта туралы не білесіз?</h2>
+ <div class="modal-note">⚠️ Барлық сұраққа жауап бермейінше балл берілмейді. Жауап бергеннен кейін ғана «Дұрыс жауапты ашу» батырмасын қолдануға болады.</div>
+ <div class="question">a) Валюта деген не?<textarea id="a1" placeholder="Жауабыңызды жазыңыз..."></textarea><details><summary>🔒 Дұрыс жауапты ашу</summary><p>Валюта – белгілі бір мемлекеттің ақша бірлігі.</p></details></div>
+ <div class="question">b) Қай елдің валютасын білесіз?<textarea id="a2" placeholder="Жауабыңызды жазыңыз..."></textarea><details><summary>🔒 Мысал жауапты ашу</summary><p>Қазақстан – теңге, АҚШ – доллар, Ұлыбритания – фунт, Ресей – рубль.</p></details></div>
+ <div class="question">c) Қазақстанның валютасы туралы не білесіз?<textarea id="a3" placeholder="Жауабыңызды жазыңыз..."></textarea><details><summary>🔒 Дұрыс жауапты ашу</summary><p>Қазақстанның ұлттық валютасы – теңге. Теңге Қазақстанда ресми ақша бірлігі ретінде қолданылады.</p></details></div>
+ <button class="main" onclick="checkLevel1()">Жауаптарды тексеру →</button><div id="l1Feedback" class="resultbox"></div>`);
+}
+function checkLevel1(){
+ const answers=[a1.value.trim(),a2.value.trim(),a3.value.trim()];
+ const f=document.getElementById('l1Feedback');
+ f.style.display='block';
+ if(answers.some(x=>x.length===0)){
+   f.className='resultbox bad';f.textContent='❌ Барлық сұраққа жауап беріңіз. Бос жауап үшін балл берілмейді.';return;
+ }
+ f.className='resultbox good';f.textContent='✅ Барлық сұраққа жауап берілді! Енді дұрыс жауаптарды ашып, өзіңізді тексере аласыз.';
+ setTimeout(()=>finishLevel(1,10),600);
+}
+
+const reading=`<h2>📖 Әлем валюталары</h2>
+<div class="reading">
+<p>Әлемдегі өзге елдер қандай валюта қолданатынын білесіз бе? Кей елдерде валюта атауы бірдей болғанымен, түрлері басқаша. Теңге – Қазақстан, рубль – Ресей, афгани – Ауғанстан, бат – Тайланд, вон – Оңтүстік Корея, дирхам – Араб Әмірлігі, доллар – Америка.</p>
+<p><b>Кувейттік динар</b> – жоғары құны мұнай экспортымен байланысты. Валютаның белгісі – <b>KWD</b>.</p>
+<p><b>Бахрейндік динар</b> – құндылығы бойынша әлемдегі ең жоғары валюталардың бірі. Белгісі – <b>BHD</b>.</p>
+<p><b>Омандық риал</b> – Оман мемлекетінің ұлттық ақшасы. Ақша қағазының бір бетінде ағылшын, екінші бетінде араб тіліндегі жазу бар. Белгісі – <b>OMR</b>.</p>
+<p><b>Британдық фунт</b> – Ұлыбританияның валюта бірлігі. Халықаралық коды – <b>GBP</b>.</p>
+<p><b>Иордания динары</b> – Иорданияның ұлттық ақшасы. Белгісі – <b>JOD</b>.</p>
+<p><b>Еуропалық еуро</b> – танымал валюталардың бірі. 2006 жылы халықаралық қолданыста АҚШ долларын басып озды. Белгісі – <b>EUR</b>.</p>
+<p><b>Швейцария франкі</b> – Швейцария ірі қаржы орталықтарының бірі. Белгісі – <b>CHF</b>.</p>
+<p><b>АҚШ доллары</b> – әлемдік сауданың 80 пайызынан астамы АҚШ долларымен есептеледі. Белгісі – <b>USD немесе $</b>.</p>
+</div>`;
+
+function level2(){
+ shell("2-ДЕҢГЕЙ • Оқу аймағы",`${reading}
+ <div class="question">Мәтін не туралы?</div>
+ <div class="options" id="idea">
+  <div class="option" onclick="select(this,'a')">a) Ақшаның құндылығы туралы</div>
+  <div class="option" onclick="select(this,'b')">b) Әлемдік елдердің валюталары туралы</div>
+  <div class="option" onclick="select(this,'c')">c) Ең қымбат валюта туралы</div>
+ </div><button class="main" onclick="checkIdea()">Жауапты тексеру</button><div id="feedback" class="resultbox"></div>`);
+}
+function select(el,v){document.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));el.classList.add('selected');selectedOption=v;}
+function checkIdea(){let f=document.getElementById('feedback');f.style.display='block';if(selectedOption==='b'){f.className='resultbox good';f.textContent='✅ Дұрыс!';setTimeout(()=>finishLevel(2,15),500)}else{f.className='resultbox bad';f.textContent='❌ Қайта оқып көріңіз.';}}
+
+const pairs={"Қазақстан":"Теңге","АҚШ":"Доллар","Ұлыбритания":"Фунт","Швейцария":"Франк","Кувейт":"Динар","Оман":"Риал","Ресей":"Рубль","Оңтүстік Корея":"Вон"};
+function level3(){
+ const vals=Object.values(pairs).sort(()=>Math.random()-.5);
+ shell("3-ДЕҢГЕЙ • Валюта пазлы",`<h2>🧩 Сөздерді дұрыс орынға жылжытыңыз</h2><p class="small">Карточканы ұстап, сәйкес елдің жанына апарыңыз.</p>
+ <div class="drop-board"><div class="bank"><h4>💰 Валюталар</h4><div id="wordBank">${vals.map(v=>`<div class="draggable" draggable="true" data-value="${v}">${v}</div>`).join('')}</div></div>
+ <div class="targets"><h4>🌍 Елдер</h4>${Object.keys(pairs).map(c=>`<div class="target" data-answer="${pairs[c]}"><b>${c}</b></div>`).join('')}</div></div></div>
+ <button class="main" onclick="checkDragPairs()">Тексеру</button><div id="dragFeedback" class="resultbox"></div>`);
+ setupDrag();
+}
+function setupDrag(){
+ document.querySelectorAll('.draggable').forEach(el=>{
+  el.addEventListener('dragstart',()=>{el.classList.add('dragging');window.dragged=el});
+  el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+ });
+ document.querySelectorAll('.target').forEach(z=>{
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});
+  z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');if(window.dragged&&!z.querySelector('.draggable'))z.appendChild(window.dragged);});
+ });
+}
+function checkDragPairs(){
+ let ok=0,all=document.querySelectorAll('.target');
+ all.forEach(z=>{let x=z.querySelector('.draggable');if(x&&x.dataset.value===z.dataset.answer)ok++});
+ let f=document.getElementById('dragFeedback');f.style.display='block';
+ if(ok===all.length){f.className='resultbox good';f.textContent=`🏆 ${ok}/${all.length} — Керемет!`;setTimeout(()=>finishLevel(3,25),600)}
+ else{f.className='resultbox bad';f.textContent=`❌ ${ok}/${all.length}. Карточкаларды қайта орналастырыңыз.`;}
+}
+
+const codes={"Кувейттік динар":"KWD","Бахрейндік динар":"BHD","Омандық риал":"OMR","Британдық фунт":"GBP","Иордания динары":"JOD","Еуро":"EUR","Швейцария франкі":"CHF","АҚШ доллары":"USD"};
+function level4(){
+ const shuffled=Object.values(codes).sort(()=>Math.random()-.5);
+ shell("4-ДЕҢГЕЙ • Кодтар ойыны",`<h2>🔤 Кодтарды дұрыс орынға апарыңыз</h2>
+ <div class="drop-board"><div class="bank"><h4>🔠 Кодтар</h4><div id="wordBank">${shuffled.map(v=>`<div class="draggable" draggable="true" data-value="${v}">${v}</div>`).join('')}</div></div>
+ <div class="targets"><h4>💱 Валюталар</h4>${Object.keys(codes).map(c=>`<div class="target" data-answer="${codes[c]}"><b>${c}</b></div>`).join('')}</div></div></div>
+ <button class="main" onclick="checkCodesDrag()">Тексеру</button><div id="dragFeedback" class="resultbox"></div>`);
+ setupDrag();
+}
+function checkCodesDrag(){
+ let ok=0,all=document.querySelectorAll('.target');all.forEach(z=>{let x=z.querySelector('.draggable');if(x&&x.dataset.value===z.dataset.answer)ok++});
+ let f=document.getElementById('dragFeedback');f.style.display='block';
+ if(ok===all.length){f.className='resultbox good';f.textContent='🏆 Барлығы дұрыс!';setTimeout(()=>finishLevel(4,25),600)}
+ else{f.className='resultbox bad';f.textContent=`❌ ${ok}/${all.length}. Қайта көріңіз.`;}
+}
+
+const quiz=[
+["Араб Әмірлігінің валютасы қалай аталады?",["Дирхам","Динар","Фунт","Риал"],0],
+["JOD қай елдің валютасының белгісі?",["Оман","Иордания","Кувейт","Бахрейн"],1],
+["Сауданың 80%-дан астамы қай валютамен есептеледі?",["Еуро","АҚШ доллары","Франк","Фунт"],1],
+["2006 жылы АҚШ долларын басып озған валюта?",["Теңге","Рубль","Еуро","Риал"],2],
+["Құндылығы бойынша бірінші валюта?",["Еуро","Кувейттік динар","Доллар","Фунт"],1],
+["Ең ірі қаржы орталықтарының бірі қай елде?",["Қазақстан","Ресей","Швейцария","Алжир"],2],
+["Ағылшын және араб тілдеріндегі жазу қай валютада аталады?",["Омандық риал","Рубль","Теңге","Франк"],0]
+];
+function level5(){
+ let q=0,points=0;
+ function render(){
+  if(q>=quiz.length){shell("5-ДЕҢГЕЙ • Нәтиже",`<h2>🧠 Квиз аяқталды!</h2><p class="question">${points}/${quiz.length} дұрыс жауап.</p><button class="main" onclick="finishLevel(5,${points*4})">Келесі деңгейге өту →</button>`);return;}
+  let item=quiz[q];
+  shell(`5-ДЕҢГЕЙ • Сұрақ ${q+1}/${quiz.length}`,`<h2>🧠 Супер-квиз</h2><div class="question">${item[0]}</div><div class="options">${item[1].map((x,i)=>`<div class="option" onclick="answerQuiz(${i})">${x}</div>`).join('')}</div><div class="small">Дұрыс жауап таңдаған соң келесі сұраққа өтесіз.</div>`);
+ }
+ window.answerQuiz=function(i){if(i===quiz[q][2]){points++;score+=2;update();}q++;render();}
+ render();
+}
+
+function level6(){
+ const sentences=[
+ ["Доллар көбіне халықаралық саудада ...","Доллар көбіне халықаралық саудада қолданылады."],
+ ["Еуро Еуропа елдерінде ...","Еуро Еуропа елдерінде қолданылады."],
+ ["Жапон иенасы Азия нарығында ...","Жапон иенасы Азия нарығында кеңінен қолданылады."],
+ ["Теңге Қазақстанда ресми ақша бірлігі ретінде ...","Теңге Қазақстанда ресми ақша бірлігі ретінде қолданылады."],
+ ["Криптовалюта онлайн жүйеде ...","Криптовалюта онлайн жүйеде қолданылады."]
+ ];
+ shell("6-ДЕҢГЕЙ • Сөйлем құрастыр",`<h2>✍️ Ырықсыз етіс</h2>
+ <p class="small">Алдымен әр сөйлемге өз нұсқаңызды жазыңыз. Барлық жауап толтырылғаннан кейін ғана балл беріледі. Дұрыс жауапты төмендегі жасырын вкладкадан көре аласыз.</p>
+ ${sentences.map((s,i)=>`<div class="question"><b>${i+1}. ${s[0]}</b><input id="p${i}" placeholder="Өз жауабыңызды жазыңыз..."><details><summary>🔒 Дұрыс жауапты ашу</summary><p>${s[1]}</p></details></div>`).join('')}
+ <button class="main" onclick="checkPassive()">Тексеру</button><div id="passiveFeedback" class="resultbox"></div>`);
+}
+function checkPassive(){
+ let filled=0,ok=0;
+ for(let i=0;i<5;i++){
+   const v=document.getElementById('p'+i).value.trim();
+   if(v) filled++;
+   if(v.toLowerCase().includes('қолданылады')) ok++;
+ }
+ let f=document.getElementById('passiveFeedback');f.style.display='block';
+ if(filled<5){
+   f.className='resultbox bad';f.textContent=`❌ Барлық сөйлемді аяқтаңыз. Қазір ${filled}/5 жауап берілді. Бос жауап үшін балл берілмейді.`;return;
+ }
+ if(ok>=4){f.className='resultbox good';f.textContent=`✅ ${ok}/5 дұрыс!`;setTimeout(()=>finishLevel(6,20),600)}
+ else{f.className='resultbox bad';f.textContent=`❌ ${ok}/5. Дұрыс жауаптарды жасырын вкладкадан ашып, қайта орындаңыз.`;}
+}
+
+function level7(){
+ shell("7-ДЕҢГЕЙ • Видео және дебат",`<h2>🎥 Бейнеролик</h2>
+ <a class="main" style="display:inline-block;text-decoration:none" target="_blank" href="https://www.youtube.com/watch?v=qqcoCU6bIrQ">▶️ Бейнероликті ашу</a>
+ <div class="question">a) Бейнежазбадан не түсіндіңіз?<textarea id="videoA" placeholder="Жауабыңызды жазыңыз..."></textarea></div>
+ <div class="question">b) Бейнежазбаның мазмұнын айтып беріңіз.<textarea id="videoB" placeholder="Жауабыңызды жазыңыз..."></textarea></div>
+ <h2>⚖️ Дебат: «Ақшаның адам өміріндегі рөлі»</h2>
+ <div class="modal-note"><b>1-тұжырым:</b> Ақша – ең маңызды құндылық.<br><b>2-тұжырым:</b> Ақша маңызды, бірақ оның құндылығы асыра бағаланған.</div>
+ <div class="question">Өз пікіріңізді жазыңыз және кемінде 2 аргумент келтіріңіз.<textarea id="debate" placeholder="Пікіріңізді жазыңыз..."></textarea></div>
+ <button class="main" onclick="checkLevel7()">Жауаптарды аяқтау →</button><div id="l7Feedback" class="resultbox"></div>`);
+}
+function checkLevel7(){
+ const arr=[videoA.value.trim(),videoB.value.trim(),debate.value.trim()];
+ const f=document.getElementById('l7Feedback');f.style.display='block';
+ if(arr.some(x=>!x)){f.className='resultbox bad';f.textContent='❌ Барлық тапсырмаға жауап беріңіз. Бос жауап үшін балл берілмейді.';return;}
+ f.className='resultbox good';f.textContent='✅ Барлық тапсырма орындалды!';
+ setTimeout(()=>finishLevel(7,15),500);
+}
+function level8(){
+ const pct=Math.min(100,Math.round(score/130*100));
+ shell("8-ДЕҢГЕЙ • ФИНАЛ",`<h2>🏆 Құттықтаймыз!</h2><div class="hero" style="margin-top:20px"><h1>${score} ⭐</h1><p>Сіздің жалпы нәтижеңіз</p></div>
+ <h3>${done.size}/8 деңгей аяқталды</h3>
+ <p class="question">${pct>=80?"🌟 Өте жақсы нәтиже!":pct>=60?"👍 Жақсы жұмыс!":"📚 Тапсырмаларды қайта орындап көріңіз!"}</p>
+ <button class="main" onclick="location.reload()">🔄 Ойынды қайта бастау</button>`);
+ if(done.size<8) done.add(8); update();
+}
+update();
+</script>
+</body>
+</html>
